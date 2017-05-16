@@ -26,8 +26,6 @@ int main()
 	Window window;
 	GLuint vao, program;
 
-	UDPClient udpclient("127.0.0.1", 8888);
-
 	glGenVertexArrays(1, &vao);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
@@ -50,17 +48,23 @@ int main()
 	mat3 viewMatrix;
 	mat3 perspectiveMatrix = tm_scale(1 / 12.8f, 1 / 7.2f);
 
+
+	Sleep(1000);
+	UDPClient udpclient("127.0.0.1", 8888);
+	udpclient.connect();
+
+
 	double time_start;
-	double time_now;
+	double time_now = glfwGetTime();
 
 	while (window.update())
 	{
-		time_start = glfwGetTime();
+		time_start = time_now;
 		viewMatrix = tank.viewMatrix();
 		glm::mat3 VP = perspectiveMatrix * viewMatrix;
 
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		
+
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -91,11 +95,35 @@ int main()
 		tank.update();
 		player2.update();
 
+		udpclient.receive();
+		uint8_t num = 0;
+		udpclient.read(num);
+		printf("Number of objects: %d\n", num);
+
 		tank.prepareNetData(udpclient);
 		udpclient.send();
 
+		
+		auto func = [&udpclient]()
+		{
+			uint8_t num = 0;
+			udpclient.read(num);
+			printf("Id of an object: %d\n", num);
+			float fnum[3];
+			for (auto f : fnum)
+			{
+				udpclient.read(f);
+				printf("%f ", f);
+			}
+			printf("\n");
+		};
+		for (int i = 0; i < num; i++)
+			func();
+		
 
-		while (glfwGetTime() - time_start < (1/61.0));
+		do
+			time_now = glfwGetTime();
+		while (time_now - time_start < (1/61.0));
 	}
 
 	glDeleteVertexArrays(1, &vao);

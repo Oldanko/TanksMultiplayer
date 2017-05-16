@@ -1,5 +1,6 @@
 #pragma once
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <stdio.h>
 #include <winsock2.h>
@@ -16,7 +17,8 @@ class UDPClient
 	int slen = sizeof(si_server);
 	WSADATA wsa;
 
-	uint32_t dataSize;
+	uint32_t dataSize; 
+	uint32_t bufPointer;
 
 	char buf[BUFLEN];
 	char msg[BUFLEN];
@@ -26,6 +28,9 @@ public:
 	bool connect();
 	void send();
 	void receive();
-	void push(float f);
+	void buffer(float f);
+	void buffer(const char* data);
+	void read(uint8_t &data);
+	void read(float &data);
 	//void setMsg(const char* message);
 };

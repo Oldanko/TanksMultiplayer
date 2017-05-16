@@ -49,11 +49,9 @@ void Tank::prepareNetData(UDPClient &client)
 {
 	float arr[] = { m_transform.position().x, m_transform.position().y, m_transform.angle() };
 
-	client.push(m_transform.position().x);
-	client.push(m_transform.position().y);
-	client.push(m_transform.angle());
+	client.buffer(m_transform.position().x);
+	client.buffer(m_transform.position().y);
+	client.buffer(m_transform.angle());
 }
-
-
 
 GLuint Tank::texture = 0;

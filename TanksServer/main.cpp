@@ -4,102 +4,40 @@
 #include<winsock2.h>
 
 #include <iostream>
+#include <vector>
 
-#define BUFLEN 512  //Max length of buffer
-#define PORT 8888   //The port on which to listen for incoming data
+#include <thread>
+#include <mutex>
 
-class SocketManager
+#include <chrono>
+
+#include <map>
+
+#include "SocketManager.h"
+
+struct Transform
 {
-	SOCKET s;
-	struct sockaddr_in address;
-	int slen, recv_len;
-	char buf[BUFLEN];
-public:
-	SocketManager()
+	float m_x;
+	float m_y;
+	float m_a;
+	Transform() : m_x(0), m_y(0), m_a(0) {};
+	Transform(float x, float y, float a) : m_x(x), m_y(y), m_a(a) {};
+	void print() { printf("%f, %f, %f;\n", m_x, m_y, m_a); }
+	void prepareNetData(SocketManager & s)
 	{
-		slen = sizeof(address);
-
-		//Create a socket
-		if ((s = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
-		{
-			printf("Could not create socket : %d", WSAGetLastError());
-		}
-		printf("Socket created.\n");
-
-		//Prepare the sockaddr_in structure
-		address.sin_family = AF_INET;
-		address.sin_addr.s_addr = INADDR_ANY;
-		address.sin_port = htons(PORT);
-
-		//Bind
-		if (bind(s, (struct sockaddr *)&address, sizeof(address)) == SOCKET_ERROR)
-		{
-			printf("Bind failed with error code : %d", WSAGetLastError());
-			exit(EXIT_FAILURE);
-		}
-		puts("Bind done");
-
+		s.buffer(m_x);
+		s.buffer(m_y);
+		s.buffer(m_a);
 	}
-
-	SocketManager(sockaddr_in other)
+	void readNetData(SocketManager & s)
 	{
-		address = other;
-		slen = sizeof(address);
-		//Create a socket
-		if ((s = socket(AF_INET, SOCK_DGRAM, 0)) == INVALID_SOCKET)
-		{
-			printf("Could not create socket : %d", WSAGetLastError());
-		}
-		printf("Socket created.\n");
-
-	}
-
-	~SocketManager()
-	{
-		closesocket(s);
-		WSACleanup();
-	}
-
-	void connect()
-	{
-		if ((recv_len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &address, &slen)) == SOCKET_ERROR)
-		{
-			printf("recvfrom() failed with error code : %d", WSAGetLastError());
-			exit(EXIT_FAILURE);
-		}
-		/*
-		Check if a client wants to connect
-		Check if the client can connect
-		Create a new socket for the client
-		Ask the socket to send a connection request to the client
-		Spawn a new thread for the socket
-		*/
-	}
-
-	void receive()
-	{
-		printf("Waiting for data...");
-		fflush(stdout);
-
-		memset(buf, '\0', BUFLEN);
-
-		if ((recv_len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &address, &slen)) == SOCKET_ERROR)
-		{
-			printf("recvfrom() failed with error code : %d", WSAGetLastError());
-			exit(EXIT_FAILURE);
-		}
-	}
-
-	void send()
-	{
-		//now reply the client with the same data
-		if (sendto(s, buf, recv_len, 0, (struct sockaddr*) &address, slen) == SOCKET_ERROR)
-		{
-			printf("sendto() failed with error code : %d", WSAGetLastError());
-			exit(EXIT_FAILURE);
-		}
+		s.read(m_x);
+		s.read(m_y);
+		s.read(m_a);
 	}
 };
+
+std::map<uint8_t, Transform> netObjects;
 
 int main()
 {
@@ -114,15 +52,80 @@ int main()
 	}
 	printf("Initialised.\n");
 	
+	bool alive = true;
+	std::mutex mtx_alive;
+	
+	std::thread console_thread([&alive, &mtx_alive]()
+	{ 
+		std::cin.ignore();
+		mtx_alive.lock();
+		alive = false;
+		mtx_alive.unlock();
+		return;
+	});
+	console_thread.detach();
 
-	SocketManager udpman;
+	SocketManager mainSocket;
+	mainSocket.manageConnections();
 
-	//keep listening for data
-	while (1)
-	{	
-		udpman.receive();
-		udpman.send();
+	std::chrono::high_resolution_clock::time_point time_start;
+	std::chrono::high_resolution_clock::time_point time_now = std::chrono::high_resolution_clock::now();
+
+	std::chrono::duration<double, std::milli> time_span;
+
+	netObjects.emplace(1, Transform(1.0f, 1.0f, 1.0f));
+	netObjects.emplace(5, Transform(5.0f, 5.0f, 5.0f));
+	netObjects.emplace(2, Transform(2.0f, 2.0f, 2.0f));
+
+	mtx_alive.lock();
+
+	Transform tr(10.0f, 0.5f, 20.0f);
+	while (alive)
+	{
+		mtx_alive.unlock();
+	
+		time_start = time_now;
+
+		SocketManager::mtx_sockets.lock();
+		for (auto s : SocketManager::sockets)
+		{
+			if (s->isSent())
+			{
+				s->buffer((uint8_t)netObjects.size());
+				//tr.prepareNetData(*s);
+				for (auto n : netObjects)
+				{
+					s->buffer(n.first);
+					n.second.prepareNetData(*s);
+				}
+				s->send_request();
+			}
+		}
+		
+		for (auto s: SocketManager::sockets)
+		{
+			if (s->isReceived())
+			{
+				tr.readNetData(*s);
+				tr.print();
+				s->receive_request();
+			}
+		}
+		SocketManager::mtx_sockets.unlock();
+
+		do
+			time_now = std::chrono::high_resolution_clock::now();
+		while (std::chrono::duration<double, std::milli>(time_now - time_start).count() < (1 / 61.0));
+
+		mtx_alive.lock();
 	}
+	mtx_alive.unlock();
 
+	mainSocket.close();
+
+	for (auto s : SocketManager::sockets)
+		delete s;
+
+	WSACleanup();
 	return 0;
 }
