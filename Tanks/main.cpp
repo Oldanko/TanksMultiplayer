@@ -14,6 +14,9 @@
 #include <vector>
 #include <fstream>
 #include <string>
+#include <map>
+
+std::map<uint8_t, Tank*> netObjects;
 
 using namespace glm;
 
@@ -74,7 +77,8 @@ int main()
 		glActiveTexture(GL_TEXTURE0);
 
 		tank.draw(VP);
-		player2.draw(VP);
+		for (auto o : netObjects)
+			o.second->draw(VP);
 
 		glUniformMatrix3fv(0, 1, GL_FALSE, &VP[0][0]);
 		desert.draw();
@@ -93,38 +97,36 @@ int main()
 		glUseProgram(0);
 
 		tank.update();
-		player2.update();
+		for (auto o : netObjects)
+			o.second->update();
+		
+
+		tank.prepareNetData(udpclient);
+		udpclient.send();
 
 		udpclient.receive();
 		uint8_t num = 0;
 		udpclient.read(num);
 		printf("Number of objects: %d\n", num);
-
-		tank.prepareNetData(udpclient);
-		udpclient.send();
-
-		
-		auto func = [&udpclient]()
-		{
-			uint8_t num = 0;
-			udpclient.read(num);
-			printf("Id of an object: %d\n", num);
-			float fnum[3];
-			for (auto f : fnum)
-			{
-				udpclient.read(f);
-				printf("%f ", f);
-			}
-			printf("\n");
-		};
 		for (int i = 0; i < num; i++)
-			func();
-		
+		{
+			uint8_t num1;
+			udpclient.read(num1);
+			
+			if (netObjects.find(num1) == netObjects.end())
+				netObjects.emplace(num1, new Tank());
+
+			netObjects[num1]->readNetData(udpclient);
+		}
+
 
 		do
 			time_now = glfwGetTime();
 		while (time_now - time_start < (1/61.0));
 	}
+
+	for (auto o : netObjects);
+		//delete o.second;
 
 	glDeleteVertexArrays(1, &vao);
 	glDeleteProgram(program);

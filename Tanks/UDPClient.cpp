@@ -35,7 +35,7 @@ UDPClient::~UDPClient()
 	WSACleanup();
 }
 
-bool UDPClient::connect()
+uint8_t UDPClient::connect()
 {
 	printf("Actual server is here: %s:%d\n", inet_ntoa(si_server.sin_addr), ntohs(si_server.sin_port));
 	buffer("hello");
@@ -49,12 +49,13 @@ bool UDPClient::connect()
 	send();
 
 	receive();
-	printf(buf);
+	uint8_t id;
+	read(id);
 	printf("\n");
-	
 
 	printf("Actual server is here: %s:%d\n", inet_ntoa(si_server.sin_addr), ntohs(si_server.sin_port));
-	return true;
+	
+	return id;
 }
 
 void UDPClient::send()

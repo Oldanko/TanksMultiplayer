@@ -25,7 +25,7 @@ class UDPClient
 public:
 	UDPClient(const char* SERVER, short PORT);
 	~UDPClient();
-	bool connect();
+	uint8_t connect();
 	void send();
 	void receive();
 	void buffer(float f);

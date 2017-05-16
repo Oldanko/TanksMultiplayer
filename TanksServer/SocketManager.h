@@ -16,6 +16,9 @@
 
 class SocketManager
 {
+	static uint8_t indexer;
+	uint8_t m_index;
+
 	SOCKET s;
 	struct sockaddr_in address;
 	int slen, recv_len;
@@ -45,6 +48,8 @@ public:
 	SocketManager(sockaddr_in other);
 	~SocketManager();
 	
+	uint8_t index();
+
 	void manageConnections();
 	void serveClient();
 

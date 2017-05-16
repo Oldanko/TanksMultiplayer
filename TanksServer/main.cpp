@@ -73,10 +73,6 @@ int main()
 
 	std::chrono::duration<double, std::milli> time_span;
 
-	netObjects.emplace(1, Transform(1.0f, 1.0f, 1.0f));
-	netObjects.emplace(5, Transform(5.0f, 5.0f, 5.0f));
-	netObjects.emplace(2, Transform(2.0f, 2.0f, 2.0f));
-
 	mtx_alive.lock();
 
 	Transform tr(10.0f, 0.5f, 20.0f);
@@ -91,10 +87,12 @@ int main()
 		{
 			if (s->isSent())
 			{
-				s->buffer((uint8_t)netObjects.size());
+				s->buffer((uint8_t)(netObjects.size() - 1));
 				//tr.prepareNetData(*s);
 				for (auto n : netObjects)
 				{
+					if (n.first == s->index())
+						continue;
 					s->buffer(n.first);
 					n.second.prepareNetData(*s);
 				}
@@ -106,8 +104,10 @@ int main()
 		{
 			if (s->isReceived())
 			{
-				tr.readNetData(*s);
-				tr.print();
+				if (netObjects.find(s->index()) == netObjects.end())
+					netObjects.emplace(s->index(), Transform());
+
+				netObjects[s->index()].readNetData(*s);
 				s->receive_request();
 			}
 		}

@@ -8,6 +8,8 @@ uint8_t RECEIVE_REQ = 0b00000100;
 std::vector<SocketManager*> SocketManager::sockets;
 std::mutex SocketManager::mtx_sockets;
 
+uint8_t SocketManager::indexer = 0;
+
 SocketManager::SocketManager() : status(false)
 {
 	slen = sizeof(address);
@@ -52,7 +54,9 @@ SocketManager::SocketManager(sockaddr_in other) : status(false)
 	printf(buf);
 	printf("\n");
 
-	buffer("Indeed I Am");
+	m_index = indexer++;
+
+	buffer(m_index);
 	send();
 
 	struct sockaddr_in sin;
@@ -65,6 +69,11 @@ SocketManager::~SocketManager()
 {
 	close();
 	th.join();
+}
+
+uint8_t SocketManager::index()
+{
+	return m_index;
 }
 
 void SocketManager::manageConnections_loop()

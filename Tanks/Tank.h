@@ -16,6 +16,8 @@ public:
 	
 	Tank(glm::vec2 &position, GLfloat angle);
 
+	Tank();
+
 	void rotate(GLfloat angle);
 	void move(GLfloat speed);
 	const glm::mat3 & matrix();
@@ -24,5 +26,6 @@ public:
 	void draw(const glm::mat3 & VP) const;
 
 	void prepareNetData(UDPClient &client);
+	void readNetData(UDPClient &client);
 };
 

@@ -14,6 +14,12 @@ Tank::Tank(glm::vec2 &position, GLfloat angle)
 	m_sprite = Sprite(glm::vec2(-1, 1), glm::vec2(0, 1), texture);
 }
 
+Tank::Tank()
+{
+	m_transform = Transform(glm::vec2(), glm::vec2(.28f, .49f), 0);
+	m_sprite = Sprite(glm::vec2(-1, 1), glm::vec2(0, 1), texture);
+}
+
 void Tank::move(GLfloat speed)
 {
 	m_transform.move((tm_rotate(m_transform.angle()) * vec3(0, 1, 0)).xy * speed);
@@ -52,6 +58,16 @@ void Tank::prepareNetData(UDPClient &client)
 	client.buffer(m_transform.position().x);
 	client.buffer(m_transform.position().y);
 	client.buffer(m_transform.angle());
+}
+
+void Tank::readNetData(UDPClient & client)
+{
+	float f0, f1;
+	client.read(f0);
+	client.read(f1);
+	m_transform.setPosition(glm::vec2(f0, f1));
+	client.read(f0);
+	m_transform.setRotation(f0);
 }
 
 GLuint Tank::texture = 0;
