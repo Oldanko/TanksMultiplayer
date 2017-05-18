@@ -75,7 +75,6 @@ int main()
 
 	mtx_alive.lock();
 
-	Transform tr(10.0f, 0.5f, 20.0f);
 	while (alive)
 	{
 		mtx_alive.unlock();
@@ -83,24 +82,8 @@ int main()
 		time_start = time_now;
 
 		SocketManager::mtx_sockets.lock();
+
 		for (auto s : SocketManager::sockets)
-		{
-			if (s->isSent())
-			{
-				s->buffer((uint8_t)(netObjects.size() - 1));
-				//tr.prepareNetData(*s);
-				for (auto n : netObjects)
-				{
-					if (n.first == s->index())
-						continue;
-					s->buffer(n.first);
-					n.second.prepareNetData(*s);
-				}
-				s->send_request();
-			}
-		}
-		
-		for (auto s: SocketManager::sockets)
 		{
 			if (s->isReceived())
 			{
@@ -111,11 +94,45 @@ int main()
 				s->receive_request();
 			}
 		}
+
+		for (auto s : SocketManager::sockets)
+		{
+			if (s->isSent())
+			{
+				//s->buffer((uint8_t)(netObjects.size() - 1));
+				s->buffer((uint8_t)(netObjects.size()));
+				
+				for (auto n : netObjects)
+				{
+					//if (n.first == s->index())
+						//continue;
+					s->buffer(n.first);
+					n.second.prepareNetData(*s);
+				}
+				s->send_request();
+			}
+		}
+
+		
+
+		//auto time_start = std::chrono::high_resolution_clock::now();
+		
+		
+
+		//auto time_finish = std::chrono::high_resolution_clock::now();
+		//printf("%f\n", std::chrono::duration<double, std::milli>(time_finish - time_start).count());
+
 		SocketManager::mtx_sockets.unlock();
 
+		Sleep(((1 / 61.0) * 500 - std::chrono::duration<double, std::milli>(time_now - time_start).count()));
+		/*uint64_t times = 0;
 		do
+		{
+			++times;
 			time_now = std::chrono::high_resolution_clock::now();
-		while (std::chrono::duration<double, std::milli>(time_now - time_start).count() < (1 / 61.0));
+		}
+		while (std::chrono::duration<double, std::milli>(time_now - time_start).count() < (1 / 61.0));*/
+
 
 		mtx_alive.lock();
 	}

@@ -25,6 +25,8 @@ public:
 	void update();
 	void draw(const glm::mat3 & VP) const;
 
+	const glm::vec2 &position();
+
 	void prepareNetData(UDPClient &client);
 	void readNetData(UDPClient &client);
 };

@@ -23,10 +23,11 @@ using namespace glm;
 GLuint LoadShaders(const char * vertex_file_path, const char * fragment_file_path);
 GLuint Texture(const char * path, GLuint wrap_s, GLuint wrap_t, GLuint min_filter, GLuint mag_filter);
 
+const float speed = 0.05f;
 
 int main()
 {
-	Window window;
+	Window window(960, 540);
 	GLuint vao, program;
 
 	glGenVertexArrays(1, &vao);
@@ -60,8 +61,12 @@ int main()
 	double time_start;
 	double time_now = glfwGetTime();
 
+	tank.update();
+	tank.prepareNetData(udpclient);
+	udpclient.send();
+
 	while (window.update())
-	{
+	{	
 		time_start = time_now;
 		viewMatrix = tank.viewMatrix();
 		glm::mat3 VP = perspectiveMatrix * viewMatrix;
@@ -83,10 +88,33 @@ int main()
 		glUniformMatrix3fv(0, 1, GL_FALSE, &VP[0][0]);
 		desert.draw();
 
+		
+		
+		udpclient.receive();
+		uint8_t num = 0;
+		udpclient.read(num);
+
+		for (int i = 0; i < num; i++)
+		{
+			uint8_t num1;
+			udpclient.read(num1);
+
+			if (netObjects.find(num1) == netObjects.end())
+				netObjects.emplace(num1, new Tank());
+
+			netObjects[num1]->readNetData(udpclient);
+		}
+
+		for (auto o : netObjects)
+			o.second->update();
+
+		//if (netObjects.size() > 0)
+			//printf("%f\n", glm::distance(tank.position(), netObjects[0]->position()));
+
 		if (glfwGetKey(window.ptr(), GLFW_KEY_W) == GLFW_PRESS)
-			tank.move(0.05f);
+			tank.move(speed);
 		if (glfwGetKey(window.ptr(), GLFW_KEY_S) == GLFW_PRESS)
-			tank.move(-0.05f);
+			tank.move(-speed);
 
 		if (glfwGetKey(window.ptr(), GLFW_KEY_A) == GLFW_PRESS)
 			tank.rotate(0.02f);
@@ -97,32 +125,11 @@ int main()
 		glUseProgram(0);
 
 		tank.update();
-		for (auto o : netObjects)
-			o.second->update();
-		
-
 		tank.prepareNetData(udpclient);
 		udpclient.send();
 
-		udpclient.receive();
-		uint8_t num = 0;
-		udpclient.read(num);
-		printf("Number of objects: %d\n", num);
-		for (int i = 0; i < num; i++)
-		{
-			uint8_t num1;
-			udpclient.read(num1);
-			
-			if (netObjects.find(num1) == netObjects.end())
-				netObjects.emplace(num1, new Tank());
-
-			netObjects[num1]->readNetData(udpclient);
-		}
-
-
-		do
-			time_now = glfwGetTime();
-		while (time_now - time_start < (1/61.0));
+		time_now = glfwGetTime();
+		//Sleep((1 / 62.0)*1000 - (time_now - time_start));
 	}
 
 	for (auto o : netObjects);

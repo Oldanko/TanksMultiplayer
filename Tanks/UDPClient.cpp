@@ -27,6 +27,7 @@ UDPClient::UDPClient(const char* SERVER, short PORT)
 	si_server.sin_family = AF_INET;
 	si_server.sin_port = htons(PORT);
 	si_server.sin_addr.S_un.S_addr = inet_addr(SERVER);
+
 }
 
 UDPClient::~UDPClient()
@@ -54,7 +55,10 @@ uint8_t UDPClient::connect()
 	printf("\n");
 
 	printf("Actual server is here: %s:%d\n", inet_ntoa(si_server.sin_addr), ntohs(si_server.sin_port));
-	
+
+	u_long argp = 1;
+	//ioctlsocket(s, FIONBIO, &argp);
+
 	return id;
 }
 

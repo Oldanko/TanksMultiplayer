@@ -102,10 +102,11 @@ void SocketManager::manageConnections_loop()
 
 void SocketManager::serveClient_loop()
 {
+
 	printf("Serving loop online!\n");
 	mtx_stat.lock();
 	while (status & ALIVE)
-	{
+	{	
 		auto stat_temp = status;
 		mtx_stat.unlock();
 
@@ -124,7 +125,7 @@ void SocketManager::serveClient_loop()
 			status &= ~SEND_REQ;
 			mtx_stat.unlock();
 		}
-		
+		Sleep(16);
 		mtx_stat.lock();
 	}
 	mtx_stat.unlock();
@@ -149,7 +150,7 @@ void SocketManager::send()
 	mtx_msg.lock();
 	if (sendto(s, msg, dataSize, 0, (struct sockaddr*) &address, slen) == SOCKET_ERROR)
 	{
-		printf("sendto() failed with error code : %d\n", WSAGetLastError());
+		//printf("sendto() failed with error code : %d\n", WSAGetLastError());
 	}
 	dataSize = 0;
 	mtx_msg.unlock();
@@ -164,7 +165,7 @@ void SocketManager::receive()
 	memset(buf, '\0', BUFLEN);
 	if ((recv_len = recvfrom(s, buf, BUFLEN, 0, (struct sockaddr *) &address, &slen)) == SOCKET_ERROR)
 	{
-		printf("recvfrom() failed with error code : %d\n", WSAGetLastError());
+		//printf("recvfrom() failed with error code : %d\n", WSAGetLastError());
 	}
 	bufPointer = 0;
 	mtx_buf.unlock();

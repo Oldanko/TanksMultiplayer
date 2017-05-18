@@ -51,6 +51,11 @@ void Tank::draw(const glm::mat3 & VP) const
 	m_sprite.draw();
 }
 
+const glm::vec2 &Tank::position()
+{
+	return m_transform.position();
+}
+
 void Tank::prepareNetData(UDPClient &client)
 {
 	float arr[] = { m_transform.position().x, m_transform.position().y, m_transform.angle() };
