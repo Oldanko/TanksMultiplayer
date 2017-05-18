@@ -31,8 +31,6 @@ class SocketManager
 	std::mutex mtx_msg;
 	std::mutex mtx_stat;
 
-
-
 	char buf[BUFLEN];
 	char msg[BUFLEN];
 

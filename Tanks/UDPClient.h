@@ -32,5 +32,4 @@ public:
 	void buffer(const char* data);
 	void read(uint8_t &data);
 	void read(float &data);
-	//void setMsg(const char* message);
 };

@@ -16,6 +16,9 @@
 #include <string>
 #include <map>
 
+#include <thread>
+#include <chrono>
+
 std::map<uint8_t, Tank*> netObjects;
 
 using namespace glm;
@@ -57,17 +60,16 @@ int main()
 	UDPClient udpclient("127.0.0.1", 8888);
 	udpclient.connect();
 
-
-	double time_start;
-	double time_now = glfwGetTime();
-
 	tank.update();
 	tank.prepareNetData(udpclient);
 	udpclient.send();
 
+	std::chrono::high_resolution_clock::time_point time_start, time_now;
+
 	while (window.update())
 	{	
-		time_start = time_now;
+		time_start = std::chrono::high_resolution_clock::now();
+
 		viewMatrix = tank.viewMatrix();
 		glm::mat3 VP = perspectiveMatrix * viewMatrix;
 
@@ -128,8 +130,8 @@ int main()
 		tank.prepareNetData(udpclient);
 		udpclient.send();
 
-		time_now = glfwGetTime();
-		//Sleep((1 / 62.0)*1000 - (time_now - time_start));
+		time_now = std::chrono::high_resolution_clock::now();
+		std::this_thread::sleep_for(std::chrono::milliseconds(16) - (time_now - time_start));
 	}
 
 	for (auto o : netObjects);

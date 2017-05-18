@@ -125,7 +125,7 @@ void SocketManager::serveClient_loop()
 			status &= ~SEND_REQ;
 			mtx_stat.unlock();
 		}
-		Sleep(16);
+		std::this_thread::sleep_for(std::chrono::milliseconds(2));
 		mtx_stat.lock();
 	}
 	mtx_stat.unlock();

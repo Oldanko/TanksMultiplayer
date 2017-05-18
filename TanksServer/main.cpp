@@ -68,10 +68,7 @@ int main()
 	SocketManager mainSocket;
 	mainSocket.manageConnections();
 
-	std::chrono::high_resolution_clock::time_point time_start;
-	std::chrono::high_resolution_clock::time_point time_now = std::chrono::high_resolution_clock::now();
-
-	std::chrono::duration<double, std::milli> time_span;
+	std::chrono::high_resolution_clock::time_point time_start, time_now;
 
 	mtx_alive.lock();
 
@@ -79,7 +76,7 @@ int main()
 	{
 		mtx_alive.unlock();
 	
-		time_start = time_now;
+		time_start = std::chrono::high_resolution_clock::now();
 
 		SocketManager::mtx_sockets.lock();
 
@@ -116,23 +113,14 @@ int main()
 		
 
 		//auto time_start = std::chrono::high_resolution_clock::now();
-		
-		
 
 		//auto time_finish = std::chrono::high_resolution_clock::now();
 		//printf("%f\n", std::chrono::duration<double, std::milli>(time_finish - time_start).count());
 
 		SocketManager::mtx_sockets.unlock();
-
-		Sleep(((1 / 61.0) * 500 - std::chrono::duration<double, std::milli>(time_now - time_start).count()));
-		/*uint64_t times = 0;
-		do
-		{
-			++times;
-			time_now = std::chrono::high_resolution_clock::now();
-		}
-		while (std::chrono::duration<double, std::milli>(time_now - time_start).count() < (1 / 61.0));*/
-
+		
+		time_now = std::chrono::high_resolution_clock::now();
+		std::this_thread::sleep_for(std::chrono::milliseconds(16) - (time_now - time_start));
 
 		mtx_alive.lock();
 	}
